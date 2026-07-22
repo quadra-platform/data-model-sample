@@ -1,6 +1,5 @@
 // Quadra Data Model - DBML Format
 // Converted from quadra.aml
-// Generated on 2026-07-22T00:39:20.659Z
 
 Project quadra {
   database_type: 'PostgreSQL'
