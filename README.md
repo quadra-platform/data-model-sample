@@ -1,0 +1,1 @@
+# quadra-data-model-core
