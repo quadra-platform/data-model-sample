@@ -1,0 +1,429 @@
+// Quadra Data Model - DBML Format
+// Converted from quadra.aml
+// Generated on 2026-07-22T00:39:20.659Z
+
+Project quadra {
+  database_type: 'PostgreSQL'
+  Note: 'Quadra Data Model - FIBO-aligned data model for investment management'
+}
+
+Table ref.source {
+  source_code text [pk, not null, note: '| Source identifier: BLOOMBERG, REFINITIV, ECB, OANDA, NPORT, INTERNAL, MANUAL']
+  source_name text [not null, note: '| Display name for the source']
+  source_type text [not null, note: '| #code_list:source_type | MARKET_DATA_VENDOR, REGULATORY_FILING, INTERNAL_SYSTEM, MANUAL_ENTRY']
+  description text [note: '| Description of what this source provides']
+  priority smallint [not null, default: '100', note: '| Source priority (lower wins; 0 = override, 100 = default).']
+  is_system boolean [not null, default: false, note: '| Whether this record is system-provided (shipped with Quadra) or organization-specific']
+  is_active boolean [not null, default: true, note: '| Whether this source is currently active']
+  row_version bigint [not null, default: 1]
+  created_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  created_by text [not null, default: `USER`]
+  updated_by text [not null, default: `USER`]
+
+  Note: 'Registry of data sources for reference data, market data, and regulatory filings'
+}
+
+Table ref.currency {
+  currency_code "character varying(3)" [pk, not null, note: '| ISO 4217 3-letter currency code (USD, EUR, GBP)']
+  name text [not null, note: '| Official currency name (e.g., "United States Dollar")']
+  short_name text [note: '| Short display name for UI (e.g., "US Dollar")']
+  numeric_code integer [note: '| ISO 4217 3-digit numeric code (e.g., 840 for USD) - used for legacy system integration and SWIFT']
+  minor_units integer [note: '| Number of decimal places (2 for USD/EUR, 0 for JPY, 3 for BHD) - critical for rounding and display']
+  symbol text [note: '| Currency symbol for display (e.g., "$", "€", "£") - note: symbols can be ambiguous across currencies']
+  is_system boolean [not null, default: false, note: '| Whether this record is system-provided (shipped with Quadra) or organization-specific']
+  is_active boolean [not null, default: true, note: '| Whether this currency is currently active']
+  row_version bigint [not null, default: 1]
+  created_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  created_by text [not null, default: `USER`]
+  updated_by text [not null, default: `USER`]
+
+  Note: 'ISO 4217 currency reference table using currency codes as primary keys'
+}
+
+Table ref.country {
+  country_code "character varying(2)" [pk, not null, note: '| ISO 3166-1 alpha-2 country code (US, GB, DE, JP, etc.)']
+  name text [not null, note: '| Official country name (e.g., "United States of America")']
+  short_name text [note: '| Short display name for UI (e.g., "USA", "UK")']
+  numeric_code "character varying(3)" [note: '| ISO 3166-1 numeric code (840, 826, 276, 392)']
+  region text [note: '| Geographic region: AMERICAS, EUROPE, ASIA, AFRICA, OCEANIA, ANTARCTICA']
+  sub_region text [note: '| Geographic sub-region: NORTHERN_AMERICA, WESTERN_EUROPE, EASTERN_ASIA, etc.']
+  regulatory_region text [note: '| Regulatory grouping: EU, EEA, FATF, OECD, etc.']
+  is_sovereign boolean [note: '| Whether this is a sovereign nation (false for territories, dependencies)']
+  sovereignty_country_code "character varying(2)" [note: '| For territories: reference to sovereign country']
+  is_system boolean [not null, default: false, note: '| Whether this record is system-provided (shipped with Quadra) or organization-specific']
+  is_active boolean [not null, default: true, note: '| Whether this country is currently active']
+  row_version bigint [not null, default: 1]
+  created_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  created_by text [not null, default: `USER`]
+  updated_by text [not null, default: `USER`]
+
+  Note: 'ISO 3166-1 country reference table using alpha-2 codes as primary keys'
+}
+
+Table ref.exchange {
+  exchange_code text [pk, not null, note: '| Exchange identifier: NYSE, NASDAQ, LSE, XLON, XPAR, etc. (use MIC codes where possible)']
+  name text [not null, note: '| Official exchange name (e.g., "New York Stock Exchange")']
+  short_name text [note: '| Short display name for UI (e.g., "NYSE")']
+  mic_code "character varying(4)" [note: '| ISO 10383 Market Identifier Code (4-character code)']
+  country_code "character varying(2)" [note: '| Country where exchange is located']
+  city text [note: '| City where exchange is located']
+  timezone text [note: '| IANA timezone (e.g., "America/New_York", "Europe/London")']
+  currency_code "character varying(3)" [note: '| Primary trading currency for the exchange']
+  exchange_type text [note: '| #code_list:exchange_type | Type of venue: STOCK_EXCHANGE, FUTURES_EXCHANGE, OPTIONS_EXCHANGE, FX_MARKET, OTC, MTF, ATS']
+  operating_hours text [note: '| Trading hours in local time (e.g., "09:30-16:00")']
+  settlement_cycle_days integer [note: '| Default settlement cycle: T+2, T+1, T+0']
+  website_url text [note: '| Official website URL']
+  is_system boolean [not null, default: false, note: '| Whether this record is system-provided (shipped with Quadra) or organization-specific']
+  is_active boolean [not null, default: true, note: '| Whether this exchange is currently active']
+  row_version bigint [not null, default: 1]
+  created_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  created_by text [not null, default: `USER`]
+  updated_by text [not null, default: `USER`]
+
+  Note: 'Exchange and trading venue reference table using exchange codes as primary keys'
+}
+
+Table core.issuer {
+  issuer_id bigint [pk, not null, note: '| Surrogate primary key for the issuer.']
+  issuer_code text [not null, note: '| Business code (LEI, ticker, or composite key)']
+  legal_name text [not null, note: '| Official issuer legal name']
+  short_name text [note: '| Short/display name']
+  lei_code "character varying(20)" [note: '| Legal Entity Identifier']
+  cusip_root "character varying(6)" [note: '| CUSIP 6-character issuer identifier (first 6 characters of CUSIP)']
+  country_of_domicile "character varying(2)" [note: '| ISO 3166-1 alpha-2 country code']
+  country_of_incorporation "character varying(2)" [note: '| For legal entities: country of incorporation']
+  issuer_type text [not null, note: '| #code_list:issuer_type | CORPORATE, SOVEREIGN, MUNICIPAL, SUPRANATIONAL, SPV']
+  organization_type text [note: '| #code_list:organization_type | Detailed org type: CORPORATION, GOVERNMENT, AGENCY, etc.']
+  credit_rating text [note: '| Issuer credit rating']
+  is_sovereign boolean [default: false, note: '| Government/sovereign issuer flag']
+  compliance_status text [note: '| #code_list:compliance_status | Compliance approval status: APPROVED, RESTRICTED, SANCTIONED, PENDING_REVIEW, SUSPENDED']
+  issuer_external_identifiers jsonb [default: '`\'{}\'::jsonb`', note: '| Additional external IDs']
+  is_active boolean [not null, default: true, note: '| Whether this issuer is currently active']
+  is_deleted boolean [not null, default: false, note: '| Logical deletion flag for issuer records']
+  row_version bigint [not null, default: 1]
+  created_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  created_by text [not null, default: `USER`]
+  updated_by text [not null, default: `USER`]
+
+  Note: 'Security issuers - legal entities that issue financial instruments'
+}
+
+Table ref.position_type {
+  position_type_code text [pk, not null, note: '| Position type: EOD, INTRADAY, PRELIM, FINAL, NAV_CALC, TRADING_BOOK']
+  name text [not null, note: '| Display name for the position type']
+  description text [note: '| Detailed explanation of when this position type is used']
+  valuation_method text [note: '| Valuation approach: MARKET_PRICE, MODEL, VENDOR, MANUAL']
+  reporting_priority integer [note: '| Priority for reporting (lower number = higher priority) - determines which valuation is used when multiple exist']
+  is_official_valuation boolean [default: false, note: '| Whether this is a official book of record valuation for regulatory/accounting purposes']
+  frequency text [note: '| How often positions of this type are updated: DAILY, INTRADAY, WEEKLY, MONTHLY']
+  business_day_offset integer [note: '| Business day offset for this position type (0=same day, -1=previous day, +1=next day)']
+  is_system boolean [not null, default: false, note: '| Whether this record is system-provided (shipped with Quadra) or organization-specific']
+  is_active boolean [not null, default: true, note: '| Whether this position type is currently active']
+  row_version bigint [not null, default: 1]
+  created_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  created_by text [not null, default: `USER`]
+  updated_by text [not null, default: `USER`]
+
+  Note: 'Position valuation type reference table - defines different contexts for position valuations (EOD, intraday, NAV, etc.)'
+}
+
+Table ref.instrument_type {
+  instrument_type_code text [pk, not null, note: '| Meaningful business code like CORP_BOND, COMMON_STOCK, CALL_OPTION (TEXT per PostgreSQL principles)']
+  name text [not null, note: '| Display name for the instrument type']
+  description text [note: '| Detailed explanation of this instrument type']
+  category text [not null, note: '| #code_list:instrument_category | High-level instrument category: EQUITY, FIXED_INCOME, DERIVATIVE, FUND, CASH, ALTERNATIVE']
+  subcategory text [note: '| #code_list:instrument_subcategory | More specific subcategory within the category (e.g., CONVERTIBLE_BOND, PREFERRED_STOCK)']
+  is_marketable boolean [default: true, note: '| Whether this instrument type can be traded on public markets']
+  is_derivative boolean [default: false, note: '| Whether this is a derivative instrument (options, futures, swaps, etc.)']
+  requires_pricing boolean [default: true, note: '| Whether this instrument type requires market pricing (false for cash)']
+  supports_fractional_shares boolean [default: false, note: '| Whether positions can have fractional quantities (true for funds, false for most stocks)']
+  regulatory_category text [note: '| Regulatory classification: SEC_REGISTERED, EXEMPT_SECURITY, COMMODITY, etc.']
+  sec_classification text [note: '| SEC-specific classification if applicable (e.g., NPORT asset category codes)']
+  pricing_method text [note: '| #code_list:pricing_method | Default pricing method: MARKET_PRICE, NAV, MODEL, PAR, VENDOR']
+  valuation_frequency text [note: '| #code_list:valuation_frequency | How often this type is typically valued: DAILY, WEEKLY, MONTHLY, QUARTERLY']
+  type_config jsonb [note: '| Type-specific configuration and attributes (settlement rules, day count conventions, etc.)']
+  is_system boolean [not null, default: false, note: '| Whether this record is system-provided (shipped with Quadra) or organization-specific']
+  is_active boolean [not null, default: true, note: '| Whether this instrument type is currently active']
+  row_version bigint [not null, default: 1]
+  created_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  created_by text [not null, default: `USER`]
+  updated_by text [not null, default: `USER`]
+
+  Note: 'Reference table for instrument type classifications using meaningful codes as primary keys'
+}
+
+Table core.instrument {
+  instrument_id bigint [pk, not null, note: '| Surrogate primary key for the instrument.']
+  name text [not null, note: '| Official instrument name']
+  short_name text [note: '| Short/display name for UI']
+  instrument_type_code text [not null, note: '| Type of instrument (COMMON_STOCK, CORP_BOND, CALL_OPTION, etc.)']
+  issuer_id bigint [note: '| Reference to issuer (FIBO: is issued by)']
+  cusip "character varying(12)" [note: '| Committee on Uniform Securities Identification Procedures identifier (9-12 characters)']
+  isin "character varying(12)" [note: '| International Securities Identification Number (12 characters)']
+  sedol "character varying(7)" [note: '| Stock Exchange Daily Official List identifier (7-character alphanumeric)']
+  figi "character varying(12)" [note: '| Financial Instrument Global Identifier (12-character Bloomberg Global ID)']
+  cins "character varying(9)" [note: '| CUSIP International Numbering System identifier (9-character alphanumeric)']
+  ppn "character varying(12)" [note: '| Private Placement Number — primary identifier for Rule 144A and privately placed securities on NAIC Schedule D. Mutually exclusive with CUSIP for a given issuance.']
+  ticker "character varying(50)" [note: '| Trading ticker symbol (e.g., AAPL, MSFT)']
+  reuters_ric text [note: '| Reuters Instrument Code']
+  other_identifiers jsonb [default: '"\'[]\'::jsonb"', note: '| JSONB array of unstructured identifiers from source systems']
+  currency_code "character varying(3)" [not null, note: '| ISO 4217 currency code for denomination (USD, EUR, etc.)']
+  country_of_risk "character varying(2)" [note: '| ISO 3166-1 alpha-2 country code where primary risk resides']
+  country_of_incorporation "character varying(2)" [note: '| ISO 3166-1 alpha-2 country code where instrument is legally incorporated/domiciled']
+  primary_exchange_code text [note: '| Primary exchange where instrument is traded (NYSE, NASDAQ, LSE, etc.)']
+  listing_status text [note: '| #code_list:listing_status | Listing status on primary exchange']
+  trading_status text [note: '| #code_list:trading_status | Current trading status']
+  maturity_date date [note: '| Maturity date for fixed income instruments (must be after issue_date)']
+  issue_date date [note: '| Date when instrument was issued/IPO date']
+  coupon_rate numeric(10,6) [note: '| Annual coupon rate for fixed income (as decimal, e.g., 0.05 for 5%)']
+  coupon_frequency integer [note: '| Coupon payment frequency per year (1=annual, 2=semi-annual, 4=quarterly, 12=monthly)']
+  face_value numeric(25,6) [note: '| Face/par value of the instrument (for bonds, preferred stock, etc.)']
+  underlying_instrument_id bigint [note: '| For derivatives: reference to the underlying instrument']
+  portfolio_code text [note: '| For fund instruments: reference to the portfolio representing the fund\'s holdings']
+  parent_instrument_id bigint [note: '| For multi-leg instruments (swaps, structured products): reference to parent instrument (NULL for standalone or parent itself)']
+  leg_sequence integer [note: '| For multi-leg instruments: sequence number of this leg (1, 2, 3...). NULL for standalone instruments']
+  strike_price numeric(25,6) [note: '| Strike price for options and warrants']
+  expiry_date date [note: '| Expiration date for derivatives']
+  option_type text [note: '| #code_list:option_type | Option type: CALL or PUT']
+  contract_size numeric(25,2) [note: '| Contract size for derivatives (number of underlying units per contract)']
+  trade_date date [note: '| Trade execution date (for OTC instruments, may differ from issue_date for bilateral trades)']
+  settlement_date date [note: '| Settlement date (for FX forwards, futures, different from expiry_date/maturity_date)']
+  day_count_convention text [note: '| Day count convention: 30/360, ACT/360, ACT/ACT, ACT/365, 30E/360, 30E/360_ISDA']
+  payment_frequency integer [note: '| Payment frequency per year for swaps (may differ from coupon_frequency)']
+  floating_rate_index text [note: '| Floating rate index: LIBOR_3M, SOFR, EURIBOR_6M, SONIA, ESTR, etc.']
+  spread_over_index numeric(10,6) [note: '| Spread over floating rate index (as decimal, e.g., 0.0025 for 25bps)']
+  reset_frequency integer [note: '| Rate reset frequency per year (for floating rate instruments, swaps)']
+  barrier_level numeric(25,6) [note: '| Barrier level for barrier options/structured products (knock-in/knock-out level)']
+  cap_level numeric(25,6) [note: '| Cap level for capped products (maximum payoff level)']
+  floor_level numeric(25,6) [note: '| Floor level for floored products (minimum payoff level)']
+  payoff_description text [note: '| Description of payoff formula for complex structured products (autocallables, range accruals, etc.)']
+  seniority_level text [note: '| #code_list:seniority_level | Seniority for debt instruments: SENIOR_SECURED, SENIOR_UNSECURED, SUBORDINATED, JUNIOR, MEZZANINE']
+  collateral_type text [note: '| #code_list:collateral_type | Type of collateral: REAL_ESTATE, EQUIPMENT, ACCOUNTS_RECEIVABLE, INVENTORY, SECURITIES, UNSECURED']
+  is_active boolean [not null, default: true, note: '| Whether instrument is currently active in the system']
+  is_deleted boolean [not null, default: false, note: '| Logical deletion flag for instrument records']
+  status_reason text [note: '| Explanation for current status (e.g., delisted reason, suspension explanation)']
+  data_quality_score integer [note: '| Computed quality score 0-100 based on identifier completeness and validation']
+  identifier_confidence text [note: '| #code_list:identifier_confidence | Confidence level in instrument identification: VERY_HIGH, HIGH, MEDIUM, LOW, NONE']
+  external_data jsonb [note: '| JSONB field for varying third-party data structures (current state only)']
+  row_version bigint [not null, default: 1]
+  created_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  created_by text [not null, default: `USER`]
+  updated_by text [not null, default: `USER`]
+
+  Note: 'Current state securities master with all identifiers stored as columns, using surrogate keys for high-cardinality data'
+}
+
+Table ref.investment_strategy {
+  strategy_code text [pk, not null, note: '| Unique business code identifying the strategy (e.g., GROWTH, VALUE, INCOME, BALANCED, ABSOLUTE_RETURN)']
+  name text [not null, note: '| Display name for the investment strategy']
+  description text [note: '| Detailed description of the strategy, its objectives, and approach']
+  strategy_type text [not null, note: '| #code_list:strategy_type | High-level strategy classification: GROWTH, VALUE, INCOME, BALANCED, ABSOLUTE_RETURN, HEDGE, QUANTITATIVE, EVENT_DRIVEN, etc.']
+  investment_style text [note: '| #code_list:investment_style | Investment approach style: ACTIVE, PASSIVE, ENHANCED_INDEX, FACTOR_BASED, THEMATIC, TACTICAL, SYSTEMATIC, etc.']
+  risk_level text [note: '| #code_list:risk_level | Risk classification: CONSERVATIVE, MODERATE, BALANCED, AGGRESSIVE, VERY_AGGRESSIVE']
+  time_horizon text [note: '| #code_list:time_horizon | Expected investment time horizon: SHORT_TERM (< 1 year), MEDIUM_TERM (1-5 years), LONG_TERM (> 5 years)']
+  liquidity_requirement text [note: '| #code_list:liquidity_requirement | Portfolio liquidity needs: DAILY, WEEKLY, MONTHLY, QUARTERLY, LOW_LIQUIDITY (for illiquid assets like PE/VC)']
+  target_return_annual numeric(10,6) [note: '| Target annual return as decimal (e.g., 0.08 for 8% target return) - used for strategy benchmarking']
+  target_volatility numeric(10,6) [note: '| Target annualized volatility as decimal (e.g., 0.15 for 15% volatility) - risk constraint for portfolio construction']
+  max_drawdown_limit numeric(10,6) [note: '| Maximum acceptable drawdown as decimal (e.g., -0.20 for -20% max drawdown) - risk limit for monitoring']
+  is_system boolean [not null, default: false, note: '| Whether this record is system-provided (shipped with Quadra) or organization-specific']
+  is_active boolean [not null, default: true, note: '| Whether this investment strategy is currently active']
+  row_version bigint [not null, default: 1]
+  created_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  created_by text [not null, default: `USER`]
+  updated_by text [not null, default: `USER`]
+
+  Note: 'Investment strategy reference table for portfolio strategy definitions and constraints'
+}
+
+Table ref.portfolio_type {
+  portfolio_type_code text [pk, not null, note: '| Unique business code for portfolio type (e.g., MUTUAL_FUND, HEDGE_FUND, PENSION, ENDOWMENT, FAMILY_OFFICE)']
+  name text [not null, note: '| Display name for the portfolio type']
+  description text [note: '| Detailed explanation of this portfolio type']
+  category text [note: '| #code_list:portfolio_type_category | High-level category for grouping portfolio types']
+  subcategory text [note: '| #code_list:portfolio_type_subcategory | More specific subcategory within the category']
+  regulatory_classification text [note: '| #code_list:portfolio_regulatory_classification | Regulatory classification if applicable (e.g., 40_ACT_FUND, UCITS, AIFMD, ERISA)']
+  is_system boolean [not null, default: false, note: '| Whether this record is system-provided (shipped with Quadra) or organization-specific']
+  is_active boolean [not null, default: true, note: '| Whether this portfolio type is currently in use']
+  row_version bigint [not null, default: 1]
+  created_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  created_by text [not null, default: `USER`]
+  updated_by text [not null, default: `USER`]
+
+  Note: 'Reference table for portfolio strategy classifications using meaningful codes as primary keys'
+}
+
+Table core.portfolio {
+  portfolio_code text [pk, not null, note: '| Meaningful business code like GROWTH_001, INCOME_CORE, HEDGE_ALPHA']
+  name text [not null, note: '| Display name for the portfolio']
+  portfolio_type_code text [not null, note: '| Type of portfolio (MUTUAL_FUND, HEDGE_FUND, etc.)']
+  strategy_code text [note: '| Investment strategy employed by this portfolio']
+  base_currency_code "character varying(3)" [not null, note: '| Base currency for portfolio valuation and reporting']
+  inception_date date [note: '| Date when portfolio was established/launched']
+  is_active boolean [not null, default: true, note: '| Whether portfolio is currently active']
+  is_deleted boolean [not null, default: false, note: '| Logical deletion flag for portfolio records']
+  termination_date date [note: '| Date when portfolio was terminated/closed']
+  investment_objective text [note: '| Description of portfolio\'s investment objectives and goals']
+  risk_profile text [note: '| Risk profile description or classification']
+  status text [note: '| Workflow status (e.g., VERIFIED, PENDING_APPROVAL) - optional by default']
+  row_version bigint [not null, default: 1]
+  created_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  created_by text [not null, default: `USER`]
+  updated_by text [not null, default: `USER`]
+
+  Note: 'Portfolio master using meaningful business codes, with first-class fields for strategy and risk parameters'
+}
+
+Table ref.transaction_type {
+  transaction_type_code text [pk, not null, note: '| Transaction type code: BUY, SELL, SHORT_SELL, COVER, TRANSFER_IN, TRANSFER_OUT, DIVIDEND, INTEREST, SPLIT, SPINOFF, MERGER, EXERCISE, EXPIRE, ASSIGN']
+  name text [not null, note: '| Human-readable transaction type name']
+  description text [note: '| Detailed description of the transaction type']
+  is_system boolean [not null, default: false, note: '| Whether this record is system-provided (shipped with Quadra) or organization-specific']
+  is_active boolean [not null, default: true]
+  row_version bigint [not null, default: 1]
+  created_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  created_by text [not null, default: `USER`]
+  updated_by text [not null, default: `USER`]
+
+  Note: 'Reference table for transaction type classifications'
+}
+
+Table core.transaction {
+  transaction_id bigint [pk, not null, note: '| Auto-generated surrogate primary key for transaction records']
+  portfolio_code text [not null, note: '| Reference to portfolio executing this transaction']
+  instrument_id bigint [not null, note: '| Reference to the financial instrument being traded']
+  trade_date date [not null, note: '| Date when trade was executed in the market']
+  settlement_date date [note: '| Date when trade settles (cash and securities exchanged)']
+  record_date date [not null, note: '| Date when transaction was recorded/booked/posted in the system']
+  transaction_type_code text [not null, note: '| Transaction classification']
+  transaction_status text [not null, default: 'PENDING', note: '| Transaction lifecycle status: PENDING, CONFIRMED, SETTLED, CANCELLED, FAILED']
+  quantity numeric(25,6) [not null, note: '| Number of units traded (positive for buys/receipts, negative for sells/deliveries)']
+  price_local numeric(25,6) [note: '| Execution price per unit in local currency (null for transfers, corporate actions)']
+  price_base numeric(25,6) [note: '| Execution price per unit in base currency (null for transfers, corporate actions)']
+  gross_amount_local numeric(25,2) [note: '| Gross transaction value in local currency (quantity * price_local)']
+  gross_amount_base numeric(25,2) [note: '| Gross transaction value in base currency (quantity * price_base)']
+  commission_local numeric(25,2) [default: 0, note: '| Brokerage commission in local currency']
+  commission_base numeric(25,2) [default: 0, note: '| Brokerage commission in base currency']
+  tax_local numeric(25,2) [default: 0, note: '| Transaction taxes in local currency (stamp duty, financial transaction tax)']
+  tax_base numeric(25,2) [default: 0, note: '| Transaction taxes in base currency']
+  fees_local numeric(25,2) [default: 0, note: '| Transaction fees in local currency (exchange fees, clearing fees, custody fees)']
+  fees_base numeric(25,2) [default: 0, note: '| Transaction fees in base currency']
+  other_charges_local numeric(25,2) [default: 0, note: '| Other miscellaneous charges in local currency (not classified as commission/tax/fees)']
+  other_charges_base numeric(25,2) [default: 0, note: '| Other miscellaneous charges in base currency']
+  net_amount_local numeric(25,2) [note: '| Net cash flow in local currency (gross ± commission ± tax ± fees ± other_charges)']
+  net_amount_base numeric(25,2) [note: '| Net cash flow in base currency (gross ± commission ± tax ± fees)']
+  base_currency_code "character varying(3)" [not null, note: '| Portfolio\'s base currency for reporting']
+  local_currency_code "character varying(3)" [note: '| Instrument\'s local/trading currency']
+  fx_rate_base_to_local numeric(15,8) [note: '| FX rate from base currency to local currency at trade execution']
+  trade_reference text [note: '| Internal trade reference number or order ID']
+  external_trade_id text [note: '| External trade identifier (broker confirmation number, exchange trade ID)']
+  settlement_reference text [note: '| Settlement instruction reference (custodian reference, SWIFT message reference)']
+  execution_venue text [note: '| Market or venue where trade executed (NYSE, NASDAQ, LSE, OTC)']
+  capacity text [note: '| Trading capacity: PRINCIPAL, AGENCY, RISKLESS_PRINCIPAL']
+  settlement_method text [note: '| Settlement method: DVP (Delivery vs Payment), RVP (Receive vs Payment), FOP (Free of Payment)']
+  accrued_interest_local numeric(25,2) [note: '| Accrued interest paid/received in local currency (for fixed income)']
+  accrued_interest_base numeric(25,2) [note: '| Accrued interest paid/received in base currency']
+  realized_pnl_local numeric(25,2) [note: '| Realized profit/loss in local currency (for closing transactions)']
+  realized_pnl_base numeric(25,2) [note: '| Realized profit/loss in base currency (for closing transactions)']
+  cost_basis_method text [note: '| Cost basis method used for P&L calculation: FIFO, LIFO, AVERAGE_COST, SPECIFIC_LOT']
+  lot_id text [note: '| Tax lot identifier for specific lot identification']
+  trade_comment text [note: '| User comment or notes about the trade']
+  transaction_attributes jsonb [default: '`\'{}\'::jsonb`', note: '| Additional transaction-specific data in JSON format (order details, execution algorithm, market conditions)']
+  source_code text [note: '| Source system providing transaction data (trading system, custodian feed, manual entry)']
+  is_cancelled boolean [not null, default: false, note: '| Flag indicating if transaction was cancelled or voided']
+  cancelled_transaction_id bigint [note: '| Reference to the original transaction if this is a cancellation transaction']
+  cancellation_reason text [note: '| Reason for transaction cancellation (trade break, settlement fail, correction)']
+  status text [note: '| Transaction status (e.g., CANCELLED, PENDING) - optional by default']
+  row_version bigint [not null, default: 1]
+  created_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  created_by text [not null, default: `USER`]
+  updated_by text [not null, default: `USER`]
+
+  Note: 'Trade transactions and activity - captures all buy/sell/transfer/corporate actions for portfolios'
+}
+
+Table core.position {
+  position_id bigint [pk, not null, note: '| Auto-generated surrogate primary key for position records']
+  portfolio_code text [not null, note: '| Reference to portfolio holding this position']
+  instrument_id bigint [not null, note: '| Reference to the financial instrument held']
+  position_type_code text [not null, default: 'DEFAULT', note: '| Type of position valuation (EOD, INTRADAY, PRELIM, FINAL, NAV_CALC)']
+  base_currency_code "character varying(3)" [not null, note: '| Portfolio\'s base currency for reporting (e.g., USD for US portfolios, EUR for European portfolios)']
+  position_date date [not null, note: '| Date of position observation (valuation date)']
+  quantity numeric(25,6) [not null, note: '| Number of units held (can be fractional for funds, negative for short positions)']
+  unit_cost numeric(25,6) [note: '| Average cost per unit in base currency (cost_base / quantity)']
+  cost_base numeric(25,2) [note: '| Total acquisition cost in base currency (book value, amortized cost)']
+  market_value_base numeric(25,2) [note: '| Current market value in base currency (quantity * price * fx_rate)']
+  unrealized_pnl_base numeric(25,2) [note: '| Unrealized profit/loss in base currency (market_value_base - cost_base)']
+  accrued_income_base numeric(25,2) [default: 0, note: '| Accrued interest or dividends in base currency (for fixed income, preferred stock)']
+  cost_local numeric(25,2) [note: '| Total acquisition cost in instrument\'s local/trading currency (for multi-currency positions)']
+  market_value_local numeric(25,2) [note: '| Current market value in instrument\'s local/trading currency (quantity * local_price)']
+  exposure_base numeric(25,2) [note: '| Economic exposure in base currency (for derivatives, this may differ from market_value due to notional amounts, leverage, delta adjustment)']
+  exposure_local numeric(25,2) [note: '| Economic exposure in local currency (notional exposure for derivatives, market value for cash instruments)']
+  local_currency_code "character varying(3)" [note: '| Instrument\'s local/trading currency (e.g., JPY for Tokyo-listed stock, GBP for LSE-listed stock)']
+  fx_rate_base_to_local numeric(15,8) [note: '| FX rate from base currency to local currency (multiply base by this to get local)']
+  portfolio_market_value_base numeric(25,2) [note: '| Total portfolio market value in base currency at position_date (for weight calculation, denormalized for performance)']
+  portfolio_exposure_base numeric(25,2) [note: '| Total portfolio exposure in base currency at position_date (for exposure weight calculation, denormalized for performance)']
+  portfolio_weight numeric(8,4) [note: '| Position weight as decimal (market_value_base / portfolio_market_value_base) - e.g., 0.0523 for 5.23% of portfolio']
+  exposure_weight numeric(8,4) [note: '| Position exposure weight as decimal (exposure_base / portfolio_exposure_base) - economic risk weight including leverage and derivatives']
+  duration numeric(10,4) [note: '| Position duration (for fixed income positions) - Macaulay or Modified duration']
+  yield_to_maturity numeric(8,4) [note: '| Yield to maturity (for fixed income positions) - as decimal (e.g., 0.0425 for 4.25%)']
+  beta numeric(8,4) [note: '| Position beta vs portfolio benchmark (for equity positions)']
+  delta numeric(8,4) [note: '| Option delta (for derivative positions) - sensitivity to underlying price movement']
+  gamma numeric(8,4) [note: '| Option gamma (for derivative positions) - rate of change of delta']
+  vega numeric(8,4) [note: '| Option vega (for derivative positions) - sensitivity to implied volatility changes']
+  theta numeric(8,4) [note: '| Option theta (for derivative positions) - time decay per day']
+  external_data jsonb [note: '| Raw position data from external sources (vendor-specific fields, reconciliation data)']
+  source_code text [not null, default: 'DEFAULT', note: '| Source system that provided this position data (NPORT, BLOOMBERG, CUSTODIAN, INTERNAL)']
+  external_position_id text [note: '| Position identifier from external source system (for reconciliation and data lineage)']
+  data_vendor text [note: '| Name of data vendor if position sourced from third party (BLOOMBERG, STATE_STREET, BNY_MELLON)']
+  row_version bigint [not null, default: 1]
+  created_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  created_by text [not null, default: `USER`]
+  updated_by text [not null, default: `USER`]
+
+  Note: 'Portfolio position holdings with dual-currency support (base and local)'
+}
+
+Ref: ref.country.(sovereignty_country_code) > ref.country.(country_code)
+Ref: ref.exchange.(country_code) > ref.country.(country_code)
+Ref: ref.exchange.(currency_code) > ref.currency.(currency_code)
+Ref: core.issuer.(country_of_domicile) > ref.country.(country_code)
+Ref: core.issuer.(country_of_incorporation) > ref.country.(country_code)
+Ref: core.instrument.(instrument_type_code) > ref.instrument_type.(instrument_type_code)
+Ref: core.instrument.(issuer_id) > core.issuer.(issuer_id)
+Ref: core.instrument.(currency_code) > ref.currency.(currency_code)
+Ref: core.instrument.(country_of_risk) > ref.country.(country_code)
+Ref: core.instrument.(country_of_incorporation) > ref.country.(country_code)
+Ref: core.instrument.(primary_exchange_code) > ref.exchange.(exchange_code)
+Ref: core.instrument.(underlying_instrument_id) > core.instrument.(instrument_id)
+Ref: core.instrument.(portfolio_code) > core.portfolio.(portfolio_code)
+Ref: core.instrument.(parent_instrument_id) > core.instrument.(instrument_id)
+Ref: core.portfolio.(portfolio_type_code) > ref.portfolio_type.(portfolio_type_code)
+Ref: core.portfolio.(strategy_code) > ref.investment_strategy.(strategy_code)
+Ref: core.portfolio.(base_currency_code) > ref.currency.(currency_code)
+Ref: core.transaction.(portfolio_code) > core.portfolio.(portfolio_code)
+Ref: core.transaction.(instrument_id) > core.instrument.(instrument_id)
+Ref: core.transaction.(transaction_type_code) > ref.transaction_type.(transaction_type_code)
+Ref: core.transaction.(base_currency_code) > ref.currency.(currency_code)
+Ref: core.transaction.(local_currency_code) > ref.currency.(currency_code)
+Ref: core.transaction.(source_code) > ref.source.(source_code)
+Ref: core.transaction.(cancelled_transaction_id) > core.transaction.(transaction_id)
+Ref: core.position.(portfolio_code) > core.portfolio.(portfolio_code)
+Ref: core.position.(instrument_id) > core.instrument.(instrument_id)
+Ref: core.position.(position_type_code) > ref.position_type.(position_type_code)
+Ref: core.position.(base_currency_code) > ref.currency.(currency_code)
+Ref: core.position.(local_currency_code) > ref.currency.(currency_code)
+Ref: core.position.(source_code) > ref.source.(source_code)
