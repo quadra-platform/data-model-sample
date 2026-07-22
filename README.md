@@ -1,3 +1,7 @@
+> **Temporary note (pre-launch):** once we are happy with this repository, the git history
+> will be overwritten to a single clean initial commit. After that, commits will only appear
+> when the affected tables change in the full Quadra data model.
+
 <p align="center">
   <a href="https://quadraplatform.com">
     <picture>
