@@ -1,24 +1,28 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/quadra-wordmark-white.svg">
-  <img src="assets/quadra-wordmark.svg" alt="Quadra" height="40">
-</picture>
+<p align="center">
+  <a href="https://quadraplatform.com">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="assets/quadra-wordmark-white.svg">
+      <img src="assets/quadra-wordmark.svg" alt="Quadra" height="48">
+    </picture>
+  </a>
+</p>
 
-# Quadra Core Data Model
+# Quadra data model sample
 
-The operational core of the [Quadra](https://quadraplatform.com) investment data model — a
-clean, **deployable** relational schema for the five entities every investment book turns on:
+A sample of the [Quadra](https://quadraplatform.com) investment data model — a clean,
+**deployable** relational schema for the five entities every investment book turns on:
 **portfolios, issuers, instruments, transactions, and positions**, with their supporting
 reference data.
 
-Real, load-it-into-Postgres SQL — FIBO-informed and built from a production model.
+Real, load-it-into-Postgres SQL — FIBO-informed and taken directly from a production model.
 
 ## What's here
 
 | File | |
 |------|--|
-| `quadra-core.postgres.sql` | PostgreSQL DDL — 14 tables across `core` and `ref` schemas |
-| `schema/quadra-core.aml` | Source model in [AML](https://azimutt.app/aml) (Alternative Modeling Language) |
-| `schema/quadra-core.dbml` | [DBML](https://dbml.dbdiagram.io) — paste into [dbdiagram.io](https://dbdiagram.io) for an interactive ERD |
+| `quadra-sample.postgres.sql` | PostgreSQL DDL — 14 tables across `core` and `ref` schemas |
+| `schema/quadra-sample.aml` | Source model in [AML](https://azimutt.app/aml) (Alternative Modeling Language) |
+| `schema/quadra-sample.dbml` | [DBML](https://dbml.dbdiagram.io) — paste into [dbdiagram.io](https://dbdiagram.io) for an interactive ERD |
 
 ## Entities
 
@@ -41,32 +45,33 @@ Reference tables provide the lookups (currencies, countries, exchanges, and the 
 enumerations) that the core entities key against. Multi-currency throughout — positions and
 transactions carry both base and local amounts.
 
-## Use it
+## Try it
 
 ```bash
 # Load into a PostgreSQL database
-psql -d your_db -f quadra-core.postgres.sql
+psql -d your_db -f quadra-sample.postgres.sql
 ```
 
-Creates the `core` and `ref` schemas, 14 tables, and their foreign keys. This is a **schema
-showcase** — structure and design, not a runnable application or seeded dataset.
+Creates the `core` and `ref` schemas, 14 tables, and their foreign keys. This is a schema
+sample — structure and design, not a runnable application or seeded dataset.
 
-## Beyond this slice
+## The full data model
 
-The full Quadra data model extends this core with parties & custody accounts (transactions link
-to counterparties, brokers, custodians, and settlement accounts), master data management,
-valuations & performance, benchmarks, corporate actions, and private-markets, real-estate, and
-infrastructure packs — 180+ tables in total. This repository is the public, self-contained core.
+This sample is a self-contained slice of the full Quadra data model, which extends it with
+parties and custody accounts (transactions link to counterparties, brokers, custodians, and
+settlement accounts), master data management, valuations and performance, benchmarks,
+corporate actions, and private-markets, real-estate, and infrastructure packs — 180+ tables
+in total.
 
-## Maintenance
+Interested in the full data model, or in the Quadra platform built on top of it?
+Get in touch at **[quadraplatform.com](https://quadraplatform.com)**.
 
-Generated from the full Quadra data model — **do not edit by hand**. Changes flow from the
-upstream source, keeping this slice always in step with the production schema.
+## About this repository
 
-This repository is a read-only publication, not a community project: issues and pull requests
-are not accepted, and it is not independently developed or maintained. It updates only when
-the corresponding tables change in the full model.
+This repository is generated automatically from the Quadra production model and updates only
+when the corresponding tables change upstream. It is a read-only publication — issues and
+pull requests are not accepted.
 
 ## License
 
-[MIT](LICENSE) — take it, use it, adapt it.
+[MIT](LICENSE)

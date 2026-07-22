@@ -1,6 +1,6 @@
-# Quadra Core Data Model — public subset
-# Generated from schema/quadra.aml by scripts/generate-core-subset.mjs. Do not edit by hand.
-# 14 tables. Full model: https://github.com/quadraplatform/quadra-platform
+# Quadra data model sample
+# A sample of the full Quadra data model. Generated upstream — do not edit by hand.
+# 14 tables. Full model: https://quadraplatform.com
 
 ref.source | Registry of data sources for reference data, market data, and regulatory filings
   source_code text pk | Source identifier: BLOOMBERG, REFINITIV, ECB, OANDA, NPORT, INTERNAL, MANUAL
