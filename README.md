@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/quadra-wordmark-white.svg">
+  <img src="assets/quadra-wordmark.svg" alt="Quadra" height="40">
+</picture>
+
 # Quadra Core Data Model
 
 The operational core of the [Quadra](https://quadraplatform.com) investment data model — a
