@@ -63,7 +63,10 @@ infrastructure packs — 180+ tables in total. This repository is the public, se
 Generated from the full Quadra data model — **do not edit by hand**. Changes flow from the
 upstream source, keeping this slice always in step with the production schema.
 
+This repository is a read-only publication, not a community project: issues and pull requests
+are not accepted, and it is not independently developed or maintained. It updates only when
+the corresponding tables change in the full model.
+
 ## License
 
-**TBD** — a permissive open-source license (MIT or Apache-2.0) will be finalized before this
-repository is made public.
+[MIT](LICENSE) — take it, use it, adapt it.
