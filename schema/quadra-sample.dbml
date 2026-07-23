@@ -169,7 +169,7 @@ Table core.instrument {
   sedol "character varying(7)" [note: '| Stock Exchange Daily Official List identifier (7-character alphanumeric)']
   figi "character varying(12)" [note: '| Financial Instrument Global Identifier (12-character Bloomberg Global ID)']
   cins "character varying(9)" [note: '| CUSIP International Numbering System identifier (9-character alphanumeric)']
-  ppn "character varying(12)" [note: '| Private Placement Number — primary identifier for Rule 144A and privately placed securities on NAIC Schedule D. Mutually exclusive with CUSIP for a given issuance.']
+  ppn "character varying(12)" [note: '| Private Placement Number, primary identifier for Rule 144A and privately placed securities on NAIC Schedule D. Mutually exclusive with CUSIP for a given issuance.']
   ticker "character varying(50)" [note: '| Trading ticker symbol (e.g., AAPL, MSFT)']
   reuters_ric text [note: '| Reuters Instrument Code']
   other_identifiers jsonb [default: '"\'[]\'::jsonb"', note: '| JSONB array of unstructured identifiers from source systems']

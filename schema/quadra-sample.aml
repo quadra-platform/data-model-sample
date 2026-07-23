@@ -1,5 +1,5 @@
 # Quadra data model sample
-# A sample of the full Quadra data model. Generated upstream — do not edit by hand.
+# A sample of the full Quadra data model. Generated upstream, do not edit by hand.
 # 14 tables. Full model: https://quadraplatform.com
 
 ref.source | Registry of data sources for reference data, market data, and regulatory filings
@@ -145,7 +145,7 @@ core.instrument | Current state securities master with all identifiers stored as
   sedol "character varying(7)" nullable | Stock Exchange Daily Official List identifier (7-character alphanumeric)
   figi "character varying(12)" nullable | Financial Instrument Global Identifier (12-character Bloomberg Global ID)
   cins "character varying(9)" nullable | CUSIP International Numbering System identifier (9-character alphanumeric)
-  ppn "character varying(12)" nullable | Private Placement Number — primary identifier for Rule 144A and privately placed securities on NAIC Schedule D. Mutually exclusive with CUSIP for a given issuance.
+  ppn "character varying(12)" nullable | Private Placement Number, primary identifier for Rule 144A and privately placed securities on NAIC Schedule D. Mutually exclusive with CUSIP for a given issuance.
   ticker "character varying(50)" nullable | Trading ticker symbol (e.g., AAPL, MSFT)
   reuters_ric text nullable | Reuters Instrument Code
   other_identifiers jsonb="'[]'::jsonb" nullable | JSONB array of unstructured identifiers from source systems

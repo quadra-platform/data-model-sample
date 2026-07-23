@@ -240,7 +240,7 @@ CREATE TABLE core.instrument (
   sedol character varying(7) NULL, -- Stock Exchange Daily Official List identifier (7-character alphanumeric)
   figi character varying(12) NULL, -- Financial Instrument Global Identifier (12-character Bloomberg Global ID)
   cins character varying(9) NULL, -- CUSIP International Numbering System identifier (9-character alphanumeric)
-  ppn character varying(12) NULL, -- Private Placement Number — primary identifier for Rule 144A and privately placed securities on NAIC Schedule D. Mutually exclusive with CUSIP for a given issuance.
+  ppn character varying(12) NULL, -- Private Placement Number, primary identifier for Rule 144A and privately placed securities on NAIC Schedule D. Mutually exclusive with CUSIP for a given issuance.
   ticker character varying(50) NULL, -- Trading ticker symbol (e.g., AAPL, MSFT)
   reuters_ric text NULL, -- Reuters Instrument Code
   other_identifiers jsonb NULL DEFAULT '[]'::jsonb, -- JSONB array of unstructured identifiers from source systems
@@ -299,7 +299,7 @@ COMMENT ON COLUMN core.instrument.isin IS 'International Securities Identificati
 COMMENT ON COLUMN core.instrument.sedol IS 'Stock Exchange Daily Official List identifier (7-character alphanumeric)';
 COMMENT ON COLUMN core.instrument.figi IS 'Financial Instrument Global Identifier (12-character Bloomberg Global ID)';
 COMMENT ON COLUMN core.instrument.cins IS 'CUSIP International Numbering System identifier (9-character alphanumeric)';
-COMMENT ON COLUMN core.instrument.ppn IS 'Private Placement Number — primary identifier for Rule 144A and privately placed securities on NAIC Schedule D. Mutually exclusive with CUSIP for a given issuance.';
+COMMENT ON COLUMN core.instrument.ppn IS 'Private Placement Number, primary identifier for Rule 144A and privately placed securities on NAIC Schedule D. Mutually exclusive with CUSIP for a given issuance.';
 COMMENT ON COLUMN core.instrument.ticker IS 'Trading ticker symbol (e.g., AAPL, MSFT)';
 COMMENT ON COLUMN core.instrument.reuters_ric IS 'Reuters Instrument Code';
 COMMENT ON COLUMN core.instrument.other_identifiers IS 'JSONB array of unstructured identifiers from source systems';
