@@ -106,12 +106,12 @@ ref.position_type | Position valuation type reference table - defines different 
   created_by text=USER
   updated_by text=USER
 
-ref.instrument_type | Reference table for instrument type classifications using meaningful codes as primary keys
-  instrument_type_code text pk | Meaningful business code like CORP_BOND, COMMON_STOCK, CALL_OPTION (TEXT per PostgreSQL principles)
+ref.instrument_type | Canonical reference catalogue for held securities and contracts using meaningful codes as primary keys
+  instrument_type_code text pk | Uppercase business code like CORP_BOND, COMMON_STOCK, INTEREST_RATE_SWAP, or OPEN_END_FUND (TEXT per PostgreSQL principles)
   name text | Display name for the instrument type
   description text nullable | Detailed explanation of this instrument type
-  category text | #code_list:instrument_category | High-level instrument category: EQUITY, FIXED_INCOME, DERIVATIVE, FUND, CASH, ALTERNATIVE
-  subcategory text nullable | #code_list:instrument_subcategory | More specific subcategory within the category (e.g., CONVERTIBLE_BOND, PREFERRED_STOCK)
+  category text | #code_list:instrument_category | High-level category: EQUITY, FIXED_INCOME, DERIVATIVE, FUND, CASH, ALTERNATIVE, OTHER
+  subcategory text nullable | #code_list:instrument_subcategory | Uppercase stable roll-up such as BOND, MONEY_MARKET, SWAP, OPTION, or OPEN_END
   is_marketable boolean=true nullable | Whether this instrument type can be traded on public markets
   is_derivative boolean=false nullable | Whether this is a derivative instrument (options, futures, swaps, etc.)
   requires_pricing boolean=true nullable | Whether this instrument type requires market pricing (false for cash)
@@ -120,7 +120,7 @@ ref.instrument_type | Reference table for instrument type classifications using 
   sec_classification text nullable | SEC-specific classification if applicable (e.g., NPORT asset category codes)
   pricing_method text nullable | #code_list:pricing_method | Default pricing method: MARKET_PRICE, NAV, MODEL, PAR, VENDOR
   valuation_frequency text nullable | #code_list:valuation_frequency | How often this type is typically valued: DAILY, WEEKLY, MONTHLY, QUARTERLY
-  type_config jsonb nullable | Type-specific configuration and attributes (settlement rules, day count conventions, etc.)
+  type_config jsonb nullable | Catalogue metadata with consistent cfi_groups and bloomberg_security_type_examples string arrays; hints only, not source mappings
   is_system boolean=false | Whether this record is system-provided (shipped with Quadra) or organization-specific
   is_active boolean=true | Whether this instrument type is currently active
   created_at "timestamp with time zone"=CURRENT_TIMESTAMP
@@ -132,7 +132,7 @@ core.instrument | Current state securities master with all identifiers stored as
   instrument_id bigint pk -> mdm.master_key(master_key_id) | Master identity issued by mdm.master_key (MDM-managed).
   name text | Official instrument name
   short_name text nullable | Short/display name for UI
-  instrument_type_code text -> ref.instrument_type(instrument_type_code) | Type of instrument (COMMON_STOCK, CORP_BOND, CALL_OPTION, etc.)
+  instrument_type_code text -> ref.instrument_type(instrument_type_code) | Canonical held security or contract type (COMMON_STOCK, CORP_BOND, OPTION, etc.)
   issuer_id bigint nullable -> core.issuer(issuer_id) | Reference to issuer (FIBO: is issued by)
   cusip "character varying(12)" nullable | Committee on Uniform Securities Identification Procedures identifier (9-12 characters)
   isin "character varying(12)" nullable | International Securities Identification Number (12 characters)
@@ -257,6 +257,7 @@ core.transaction | Trade transactions and activity - captures all buy/sell/trans
   settlement_date date nullable | Date when trade settles (cash and securities exchanged)
   record_date date | Date when transaction was recorded/booked/posted in the system
   transaction_type_code text -> ref.transaction_type(transaction_type_code) | Transaction classification
+  book_type_code text=DEFAULT | Book of record this row belongs to (DEFAULT, IBOR, ABOR, PBOR, CBOR, EBOR, TBOR); an independent view, not an alias of another book. The same trade can be held once per book
   transaction_status text=PENDING | Transaction lifecycle status: PENDING, CONFIRMED, SETTLED, CANCELLED, FAILED
   quantity numeric(25,6) | Number of units traded (positive for buys/receipts, negative for sells/deliveries)
   price_local numeric(25,6) nullable | Execution price per unit in local currency (null for transfers, corporate actions)
@@ -301,10 +302,13 @@ core.transaction | Trade transactions and activity - captures all buy/sell/trans
   updated_by text=USER
 
 core.position | Portfolio position holdings with dual-currency support (base and local)
+  # postgres index idx_position_explorer_portfolio_date on (portfolio_code, position_date, position_id)
+  # postgres index idx_position_explorer_instrument_date on (instrument_id, position_date, position_id)
   position_id bigint pk {autoIncrement} | Auto-generated surrogate primary key for position records
   portfolio_code text -> core.portfolio(portfolio_code) | Reference to portfolio holding this position
   instrument_id bigint -> core.instrument(instrument_id) | Reference to the financial instrument held
   position_type_code text=DEFAULT -> ref.position_type(position_type_code) | Type of position valuation (EOD, INTRADAY, PRELIM, FINAL, NAV_CALC)
+  book_type_code text=DEFAULT | Book of record this row belongs to (DEFAULT, IBOR, ABOR, PBOR, CBOR, EBOR, TBOR); an independent view, not an alias of another book
   base_currency_code "character varying(3)" -> ref.currency(currency_code) | Portfolio's base currency for reporting (e.g., USD for US portfolios, EUR for European portfolios)
   position_date date | Date of position observation (valuation date)
   quantity numeric(25,6) | Number of units held (can be fractional for funds, negative for short positions)
@@ -359,6 +363,7 @@ fund.fund | Master table for fund vehicles - private equity, hedge, real estate,
   fund_id bigint pk {autoIncrement} | Auto-generated surrogate key for fund records
   fund_code text unique | Unique business code for the fund (e.g., GROWTH_FUND_IV, CREDIT_OPP_2024)
   fund_name text | Full legal name of the fund
+  party_id bigint unique | Mastered party for this fund vehicle's own legal entity; each feeder, parallel or co-invest vehicle has its own
   short_name text nullable | Short display name for UI
   fund_type_code text -> fund.fund_type(fund_type_code) | Type of fund vehicle: CLOSED_END, OPEN_END, EVERGREEN, CO_INVESTMENT, FUND_OF_FUNDS, FEEDER, MASTER, SECONDARY
   portfolio_code text unique -> core.portfolio(portfolio_code) | Link to core portfolio (the fund IS a portfolio for position/valuation tracking)

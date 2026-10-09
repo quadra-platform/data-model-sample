@@ -189,9 +189,9 @@ COMMENT ON COLUMN ref.position_type.business_day_offset IS 'Business day offset 
 COMMENT ON COLUMN ref.position_type.is_system IS 'Whether this record is system-provided (shipped with Quadra) or organization-specific';
 COMMENT ON COLUMN ref.position_type.is_active IS 'Whether this position type is currently active';
 
--- Reference table for instrument type classifications using meaningful codes as primary keys
+-- Canonical reference catalogue for held securities and contracts using meaningful codes as primary keys
 CREATE TABLE ref.instrument_type (
-  instrument_type_code text NOT NULL PRIMARY KEY, -- Meaningful business code like CORP_BOND, COMMON_STOCK, CALL_OPTION (TEXT per PostgreSQL principles)
+  instrument_type_code text NOT NULL PRIMARY KEY, -- Uppercase business code like CORP_BOND, COMMON_STOCK, INTEREST_RATE_SWAP, or OPEN_END_FUND (TEXT per PostgreSQL principles)
   name text NOT NULL, -- Display name for the instrument type
   description text NULL, -- Detailed explanation of this instrument type
   category text NOT NULL,
@@ -204,7 +204,7 @@ CREATE TABLE ref.instrument_type (
   sec_classification text NULL, -- SEC-specific classification if applicable (e.g., NPORT asset category codes)
   pricing_method text NULL,
   valuation_frequency text NULL,
-  type_config jsonb NULL, -- Type-specific configuration and attributes (settlement rules, day count conventions, etc.)
+  type_config jsonb NULL, -- Catalogue metadata with consistent cfi_groups and bloomberg_security_type_examples string arrays; hints only, not source mappings
   is_system boolean NOT NULL DEFAULT FALSE, -- Whether this record is system-provided (shipped with Quadra) or organization-specific
   is_active boolean NOT NULL DEFAULT TRUE, -- Whether this instrument type is currently active
   created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -212,8 +212,8 @@ CREATE TABLE ref.instrument_type (
   created_by text NOT NULL DEFAULT USER,
   updated_by text NOT NULL DEFAULT USER
 );
-COMMENT ON TABLE ref.instrument_type IS 'Reference table for instrument type classifications using meaningful codes as primary keys';
-COMMENT ON COLUMN ref.instrument_type.instrument_type_code IS 'Meaningful business code like CORP_BOND, COMMON_STOCK, CALL_OPTION (TEXT per PostgreSQL principles)';
+COMMENT ON TABLE ref.instrument_type IS 'Canonical reference catalogue for held securities and contracts using meaningful codes as primary keys';
+COMMENT ON COLUMN ref.instrument_type.instrument_type_code IS 'Uppercase business code like CORP_BOND, COMMON_STOCK, INTEREST_RATE_SWAP, or OPEN_END_FUND (TEXT per PostgreSQL principles)';
 COMMENT ON COLUMN ref.instrument_type.name IS 'Display name for the instrument type';
 COMMENT ON COLUMN ref.instrument_type.description IS 'Detailed explanation of this instrument type';
 COMMENT ON COLUMN ref.instrument_type.is_marketable IS 'Whether this instrument type can be traded on public markets';
@@ -222,7 +222,7 @@ COMMENT ON COLUMN ref.instrument_type.requires_pricing IS 'Whether this instrume
 COMMENT ON COLUMN ref.instrument_type.supports_fractional_shares IS 'Whether positions can have fractional quantities (true for funds, false for most stocks)';
 COMMENT ON COLUMN ref.instrument_type.regulatory_category IS 'Regulatory classification: SEC_REGISTERED, EXEMPT_SECURITY, COMMODITY, etc.';
 COMMENT ON COLUMN ref.instrument_type.sec_classification IS 'SEC-specific classification if applicable (e.g., NPORT asset category codes)';
-COMMENT ON COLUMN ref.instrument_type.type_config IS 'Type-specific configuration and attributes (settlement rules, day count conventions, etc.)';
+COMMENT ON COLUMN ref.instrument_type.type_config IS 'Catalogue metadata with consistent cfi_groups and bloomberg_security_type_examples string arrays; hints only, not source mappings';
 COMMENT ON COLUMN ref.instrument_type.is_system IS 'Whether this record is system-provided (shipped with Quadra) or organization-specific';
 COMMENT ON COLUMN ref.instrument_type.is_active IS 'Whether this instrument type is currently active';
 
@@ -231,7 +231,7 @@ CREATE TABLE core.instrument (
   instrument_id bigint NOT NULL PRIMARY KEY, -- Master identity issued by mdm.master_key (MDM-managed).
   name text NOT NULL, -- Official instrument name
   short_name text NULL, -- Short/display name for UI
-  instrument_type_code text NOT NULL, -- Type of instrument (COMMON_STOCK, CORP_BOND, CALL_OPTION, etc.)
+  instrument_type_code text NOT NULL, -- Canonical held security or contract type (COMMON_STOCK, CORP_BOND, OPTION, etc.)
   issuer_id bigint NULL, -- Reference to issuer (FIBO: is issued by)
   cusip character varying(12) NULL, -- Committee on Uniform Securities Identification Procedures identifier (9-12 characters)
   isin character varying(12) NULL, -- International Securities Identification Number (12 characters)
@@ -289,7 +289,7 @@ COMMENT ON TABLE core.instrument IS 'Current state securities master with all id
 COMMENT ON COLUMN core.instrument.instrument_id IS 'Master identity issued by mdm.master_key (MDM-managed).';
 COMMENT ON COLUMN core.instrument.name IS 'Official instrument name';
 COMMENT ON COLUMN core.instrument.short_name IS 'Short/display name for UI';
-COMMENT ON COLUMN core.instrument.instrument_type_code IS 'Type of instrument (COMMON_STOCK, CORP_BOND, CALL_OPTION, etc.)';
+COMMENT ON COLUMN core.instrument.instrument_type_code IS 'Canonical held security or contract type (COMMON_STOCK, CORP_BOND, OPTION, etc.)';
 COMMENT ON COLUMN core.instrument.issuer_id IS 'Reference to issuer (FIBO: is issued by)';
 COMMENT ON COLUMN core.instrument.cusip IS 'Committee on Uniform Securities Identification Procedures identifier (9-12 characters)';
 COMMENT ON COLUMN core.instrument.isin IS 'International Securities Identification Number (12 characters)';
@@ -447,6 +447,7 @@ CREATE TABLE core.transaction (
   settlement_date date NULL, -- Date when trade settles (cash and securities exchanged)
   record_date date NOT NULL, -- Date when transaction was recorded/booked/posted in the system
   transaction_type_code text NOT NULL, -- Transaction classification
+  book_type_code text NOT NULL DEFAULT 'DEFAULT', -- Book of record this row belongs to (DEFAULT, IBOR, ABOR, PBOR, CBOR, EBOR, TBOR); an independent view, not an alias of another book. The same trade can be held once per book
   transaction_status text NOT NULL DEFAULT 'PENDING', -- Transaction lifecycle status: PENDING, CONFIRMED, SETTLED, CANCELLED, FAILED
   quantity numeric(25,6) NOT NULL, -- Number of units traded (positive for buys/receipts, negative for sells/deliveries)
   price_local numeric(25,6) NULL, -- Execution price per unit in local currency (null for transfers, corporate actions)
@@ -498,6 +499,7 @@ COMMENT ON COLUMN core.transaction.trade_date IS 'Date when trade was executed i
 COMMENT ON COLUMN core.transaction.settlement_date IS 'Date when trade settles (cash and securities exchanged)';
 COMMENT ON COLUMN core.transaction.record_date IS 'Date when transaction was recorded/booked/posted in the system';
 COMMENT ON COLUMN core.transaction.transaction_type_code IS 'Transaction classification';
+COMMENT ON COLUMN core.transaction.book_type_code IS 'Book of record this row belongs to (DEFAULT, IBOR, ABOR, PBOR, CBOR, EBOR, TBOR); an independent view, not an alias of another book. The same trade can be held once per book';
 COMMENT ON COLUMN core.transaction.transaction_status IS 'Transaction lifecycle status: PENDING, CONFIRMED, SETTLED, CANCELLED, FAILED';
 COMMENT ON COLUMN core.transaction.quantity IS 'Number of units traded (positive for buys/receipts, negative for sells/deliveries)';
 COMMENT ON COLUMN core.transaction.price_local IS 'Execution price per unit in local currency (null for transfers, corporate actions)';
@@ -543,6 +545,7 @@ CREATE TABLE core.position (
   portfolio_code text NOT NULL, -- Reference to portfolio holding this position
   instrument_id bigint NOT NULL, -- Reference to the financial instrument held
   position_type_code text NOT NULL DEFAULT 'DEFAULT', -- Type of position valuation (EOD, INTRADAY, PRELIM, FINAL, NAV_CALC)
+  book_type_code text NOT NULL DEFAULT 'DEFAULT', -- Book of record this row belongs to (DEFAULT, IBOR, ABOR, PBOR, CBOR, EBOR, TBOR); an independent view, not an alias of another book
   base_currency_code character varying(3) NOT NULL, -- Portfolio's base currency for reporting (e.g., USD for US portfolios, EUR for European portfolios)
   position_date date NOT NULL, -- Date of position observation (valuation date)
   quantity numeric(25,6) NOT NULL, -- Number of units held (can be fractional for funds, negative for short positions)
@@ -582,6 +585,7 @@ COMMENT ON COLUMN core.position.position_id IS 'Auto-generated surrogate primary
 COMMENT ON COLUMN core.position.portfolio_code IS 'Reference to portfolio holding this position';
 COMMENT ON COLUMN core.position.instrument_id IS 'Reference to the financial instrument held';
 COMMENT ON COLUMN core.position.position_type_code IS 'Type of position valuation (EOD, INTRADAY, PRELIM, FINAL, NAV_CALC)';
+COMMENT ON COLUMN core.position.book_type_code IS 'Book of record this row belongs to (DEFAULT, IBOR, ABOR, PBOR, CBOR, EBOR, TBOR); an independent view, not an alias of another book';
 COMMENT ON COLUMN core.position.base_currency_code IS 'Portfolio''s base currency for reporting (e.g., USD for US portfolios, EUR for European portfolios)';
 COMMENT ON COLUMN core.position.position_date IS 'Date of position observation (valuation date)';
 COMMENT ON COLUMN core.position.quantity IS 'Number of units held (can be fractional for funds, negative for short positions)';
@@ -646,6 +650,7 @@ CREATE TABLE fund.fund (
   fund_id bigint GENERATED BY DEFAULT AS IDENTITY NOT NULL PRIMARY KEY, -- Auto-generated surrogate key for fund records
   fund_code text NOT NULL UNIQUE, -- Unique business code for the fund (e.g., GROWTH_FUND_IV, CREDIT_OPP_2024)
   fund_name text NOT NULL, -- Full legal name of the fund
+  party_id bigint NOT NULL UNIQUE, -- Mastered party for this fund vehicle's own legal entity; each feeder, parallel or co-invest vehicle has its own
   short_name text NULL, -- Short display name for UI
   fund_type_code text NOT NULL, -- Type of fund vehicle: CLOSED_END, OPEN_END, EVERGREEN, CO_INVESTMENT, FUND_OF_FUNDS, FEEDER, MASTER, SECONDARY
   portfolio_code text NOT NULL UNIQUE, -- Link to core portfolio (the fund IS a portfolio for position/valuation tracking)
@@ -683,6 +688,7 @@ COMMENT ON TABLE fund.fund IS 'Master table for fund vehicles - private equity, 
 COMMENT ON COLUMN fund.fund.fund_id IS 'Auto-generated surrogate key for fund records';
 COMMENT ON COLUMN fund.fund.fund_code IS 'Unique business code for the fund (e.g., GROWTH_FUND_IV, CREDIT_OPP_2024)';
 COMMENT ON COLUMN fund.fund.fund_name IS 'Full legal name of the fund';
+COMMENT ON COLUMN fund.fund.party_id IS 'Mastered party for this fund vehicle''s own legal entity; each feeder, parallel or co-invest vehicle has its own';
 COMMENT ON COLUMN fund.fund.short_name IS 'Short display name for UI';
 COMMENT ON COLUMN fund.fund.fund_type_code IS 'Type of fund vehicle: CLOSED_END, OPEN_END, EVERGREEN, CO_INVESTMENT, FUND_OF_FUNDS, FEEDER, MASTER, SECONDARY';
 COMMENT ON COLUMN fund.fund.portfolio_code IS 'Link to core portfolio (the fund IS a portfolio for position/valuation tracking)';
@@ -881,3 +887,10 @@ ALTER TABLE pm.deal ADD FOREIGN KEY (deal_type_code) REFERENCES pm.deal_type(dea
 ALTER TABLE pm.deal ADD FOREIGN KEY (deal_stage_code) REFERENCES pm.deal_stage(deal_stage_code);
 ALTER TABLE pm.deal ADD FOREIGN KEY (instrument_id) REFERENCES core.instrument(instrument_id);
 ALTER TABLE pm.deal ADD FOREIGN KEY (currency_code) REFERENCES ref.currency(currency_code);
+
+-- ============================================================================
+-- MANAGED INDEXES
+-- Unique business keys and PostgreSQL access-path indexes declared in AML
+-- ============================================================================
+CREATE INDEX idx_position_explorer_portfolio_date ON core.position(portfolio_code, position_date, position_id);
+CREATE INDEX idx_position_explorer_instrument_date ON core.position(instrument_id, position_date, position_id);
